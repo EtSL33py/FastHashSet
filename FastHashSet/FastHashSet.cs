@@ -1,6 +1,6 @@
 ﻿//#define Exclude_Check_For_Set_Modifications_In_Enumerator
 //#define Exclude_Check_For_Is_Disposed_In_Enumerator
-//#define Exclude_No_Hash_Array_Implementation
+#define Exclude_No_Hash_Array_Implementation
 //#define Exclude_Cache_Optimize_Resize
 
 using System;
@@ -668,6 +668,38 @@ namespace Motvin.Collections
 		}
 
 		/// <summary>
+		/// Yoy must return values for change it in the FastHashSet. It should be used with caution because of you can change a field that affected the hash code or equality.<br/>
+		/// Example: fastHashSet.Foreach( item => { item.a = 5; return item; } );<br/>
+		/// Based on CopyTo().
+		/// </summary>
+		public void ForEach(Func<T, T> func) {
+#if !Exclude_No_Hash_Array_Implementation
+			if (IsHashing) {
+#endif
+				int pastNodeIndex = slots.Length;
+				if (firstBlankAtEndIndex < pastNodeIndex) {
+					pastNodeIndex = firstBlankAtEndIndex;
+				}
+
+				for (int i = 1;i < pastNodeIndex;i++) {
+					if (slots[i].nextIndex != BlankNextIndexIndicator) {
+						slots[i].item = func(slots[i].item);
+					}
+				}
+#if !Exclude_No_Hash_Array_Implementation
+			}
+			else {
+				// for small arrays, I think the for loop below will actually be faster than Array.Copy because of the overhead of that function - could test this
+				//Array.Copy(noHashArray, 0, array, arrayIndex, cnt);
+
+				for (int i = 0;i < count;i++) {
+					noHashArray[i] = func(noHashArray[i]);
+				}
+			}
+#endif
+		}
+
+		/// <summary>
 		/// Gets the IEqualityComparer used to determine equality for items of this FastHashSet.
 		/// </summary>
 		public IEqualityComparer<T> Comparer
@@ -777,12 +809,12 @@ namespace Motvin.Collections
 				return resizeBucketsCountThreshold;
 			}
 		}
-
+#if !Exclude_No_Hash_Array_Implementation
 		public bool IsHashing
 		{
 			get => noHashArray == null;
 		}
-
+#endif
 		// the actual capacity at the end of this function may be more than specified
 		// (in the case when it was more before this function was called - nothing is trimmed by this function, or in the case that slighly more capacity was allocated by this function)
 		/// <summary>
