@@ -668,8 +668,9 @@ namespace Motvin.Collections
 		}
 
 		/// <summary>
-		/// Yoy must return values for change it in the FastHashSet. It should be used with caution because of you can change a field that affected the hash code or equality.<br/>
+		/// ForEach where you can change values inside the FastHashSet. Yoy must return values for change it inside.<br/>
 		/// Example: fastHashSet.Foreach( item => { item.a = 5; return item; } );<br/>
+		/// It should be used with caution because of you can change a field that affected the hash code or equality.<br/>
 		/// Based on CopyTo().
 		/// </summary>
 		public void ForEach(Func<T, T> func) {
