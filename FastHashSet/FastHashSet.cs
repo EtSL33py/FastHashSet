@@ -1942,34 +1942,35 @@ namespace Motvin.Collections
 		/// <param name="item">The item to be found.</param>
 		/// <param name="isFound">Set to true if the item is found, or false if not found.</param>
 		/// <returns>Returns a ref to the element if it is found and sets the isFound out parameter to true.  If not found, it returns a ref to the first element available and sets the isFound out parameter to false.</returns>
-		public ref T Find(in T item, out bool isFound)
-		{
-			isFound = false;
+		public ref T Find(in T item, out bool isFound) {
 #if !Exclude_No_Hash_Array_Implementation
-			if (IsHashing)
-			{
+			if (IsHashing) {
 #endif
-				FindInSlotsArray(item, out int foundNodeIndex, out int priorNodeIndex, out int bucketsIndex);
-				if (foundNodeIndex != NullIndex)
-				{
-					isFound = true;
-				}
+			int hash = (comparer.GetHashCode(item) & HighBitNotSet);
+			int hashIndex = hash % bucketsModSize;
 
-				return ref slots[foundNodeIndex].item;
+			for (int index = buckets[hashIndex];index != NullIndex;) {
+				ref TNode t = ref slots[index];
+
+				if (t.hashOrNextIndexForBlanks == hash && comparer.Equals(t.item, item)) {
+					isFound = true;
+					return ref t.item; // item was found
+				}
+				index = t.nextIndex;
+			}
+			isFound = false;
+			return ref slots[0].item; // item not found
 #if !Exclude_No_Hash_Array_Implementation
 			}
-			else
-			{
+			else {
 				int i;
-				for (i = 0; i < count; i++)
-				{
-					if (comparer.Equals(item, noHashArray[i]))
-					{
+				for (i = 0;i < count;i++) {
+					if (comparer.Equals(item, noHashArray[i])) {
 						isFound = true;
 						return ref noHashArray[i];
 					}
 				}
-
+				isFound = false;
 				// if item was not found, still need to return a ref to something, so return a ref to the first item in the array
 				return ref noHashArray[0];
 			}
